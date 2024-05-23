@@ -1,0 +1,2 @@
+# huion-switcher must live in /usr/lib/udev/
+ACTION=="bind", SUBSYSTEM=="usb", ATTR{idVendor}=="256c", IMPORT{program}="huion-switcher"
