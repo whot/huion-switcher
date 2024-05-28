@@ -1,0 +1,25 @@
+name: test suite
+on: [push, pull_request]
+
+env:
+  UBUNTU_PACKAGES: libusb-1.0.0
+
+jobs:
+  test:
+    name: cargo test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: linuxwacom/libwacom/.github/actions/pkginstall@master
+        with:
+          apt: $UBUNTU_PACKAGES
+      - run: cargo test --all-features
+
+  format:
+    name: cargo format
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - run: cargo fmt --check
