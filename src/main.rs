@@ -1,8 +1,8 @@
-use anyhow::Result;
-use libusb::*;
-use std::path::PathBuf;
+use anyhow::{Context, Result};
+use libusb;
+use std::path::{Path, PathBuf};
 
-fn send_usb_request(device: &Device) -> Result<()> {
+fn send_usb_request(device: &libusb::Device) -> Result<()> {
     let timeout = std::time::Duration::from_millis(100);
     let handle = device.open()?;
     // See the uclogic driver
@@ -37,22 +37,57 @@ fn send_usb_request(device: &Device) -> Result<()> {
     Ok(())
 }
 
-fn send_usb() -> Result<()> {
-    let ctx = Context::new().unwrap();
+fn send_usb_to_all() -> Result<()> {
+    let ctx = libusb::Context::new().unwrap();
 
     const HUION_VENDOR_ID: u16 = 0x256C;
 
-    for device in ctx.devices().unwrap().iter().filter(|d| {
-        if let Ok(desc) = d.device_descriptor() {
-            desc.vendor_id() == HUION_VENDOR_ID
-        } else {
-            false
-        }
-    }) {
-        send_usb_request(&device)?;
-    }
+    let rc = ctx
+        .devices()
+        .unwrap()
+        .iter()
+        .filter(|d| {
+            if let Ok(desc) = d.device_descriptor() {
+                desc.vendor_id() == HUION_VENDOR_ID
+            } else {
+                false
+            }
+        })
+        .try_for_each(|device| send_usb_request(&device));
 
-    Ok(())
+    rc
+}
+
+fn send_usb_to_device(path: &Path) -> Result<()> {
+    let device = udev::Device::from_syspath(path)?;
+
+    let usbdev = if device.devtype().unwrap_or_default() == "usb_device" {
+        device
+    } else {
+        device
+            .parent_with_subsystem_devtype("usb", "usb_device")?
+            .context("No parent device")?
+    };
+
+    let busnum = usbdev
+        .property_value("BUSNUM")
+        .context("Failed to find BUSNUM")?;
+    let devnum = usbdev
+        .property_value("DEVNUM")
+        .context("Failed to find DEVNUM")?;
+
+    let bus = str::parse(&busnum.to_string_lossy())?;
+    let addr = str::parse(&devnum.to_string_lossy())?;
+
+    let ctx = libusb::Context::new().unwrap();
+    let rc = ctx
+        .devices()
+        .unwrap()
+        .iter()
+        .filter(|d| d.bus_number() == bus && d.address() == addr)
+        .try_for_each(|device| send_usb_request(&device));
+
+    rc
 }
 
 fn search_udev(path: &str) -> Result<()> {
@@ -77,7 +112,7 @@ fn search_udev(path: &str) -> Result<()> {
         } else {
             // we're out of udev parents so no device has the
             // property set yet. Which means we should send the USB request.
-            send_usb()?;
+            send_usb_to_device(&path)?;
             break;
         }
     }
@@ -90,7 +125,7 @@ fn main() {
     let strs: Vec<&str> = args.iter().map(|x| x.as_str()).collect();
     let rc = match &strs[..] {
         [path] => search_udev(path),
-        _ => send_usb(),
+        _ => send_usb_to_all(),
     };
     if let Err(e) = rc {
         eprintln!("Error: {e}");
