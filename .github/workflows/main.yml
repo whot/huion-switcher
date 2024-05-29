@@ -2,7 +2,7 @@ name: test suite
 on: [push, pull_request]
 
 env:
-  UBUNTU_PACKAGES: libusb-1.0.0
+  UBUNTU_PACKAGES: libusb-1.0.0 libusb-1.0-0-dev
 
 jobs:
   test:
