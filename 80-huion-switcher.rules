@@ -1,2 +1,6 @@
 # huion-switcher must live in /usr/lib/udev/
-ACTION=="bind", ATTRS{idVendor}=="256c", IMPORT{program}="huion-switcher %S%p"
+ACTION!="add|remove|bind", GOTO="huion_switcher_end"
+ATTRS{idVendor}=="256c", IMPORT{program}="huion-switcher %S%p"
+ATTRS{idVendor}=="256c", ENV{HID_UNIQ}=="", ENV{HUION_FIRMWARE_ID}!="", ENV{HID_UNIQ}="$env{HUION_FIRMWARE_ID}"
+ATTRS{idVendor}=="256c", ENV{UNIQ}=="", ENV{HUION_FIRMWARE_ID}!="", ENV{UNIQ}="$env{HUION_FIRMWARE_ID}"
+LABEL="huion_switcher_end"
