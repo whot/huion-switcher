@@ -2,6 +2,10 @@
 name = "huion-switcher"
 version = "0.1.0"
 edition = "2021"
+license = "GPL-2.0-only"
+homepage = "https://github.com/whot/huion-switcher"
+repository = "https://github.com/whot/huion-switcher"
+description = "Utility to switch Huion tablets into tablet mode"
 
 [dependencies]
 anyhow = "1.0.86"
