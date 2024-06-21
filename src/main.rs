@@ -1,8 +1,9 @@
 use anyhow::{Context, Result};
-use libusb;
+use rusb;
+use rusb::UsbContext;
 use std::path::{Path, PathBuf};
 
-fn send_usb_request(device: &libusb::Device) -> Result<()> {
+fn send_usb_request(device: &rusb::Device<rusb::Context>) -> Result<()> {
     let timeout = std::time::Duration::from_millis(100);
     let handle = device.open()?;
     // See the uclogic driver
@@ -38,7 +39,7 @@ fn send_usb_request(device: &libusb::Device) -> Result<()> {
 }
 
 fn send_usb_to_all() -> Result<()> {
-    let ctx = libusb::Context::new().unwrap();
+    let ctx = rusb::Context::new().unwrap();
 
     const HUION_VENDOR_ID: u16 = 0x256C;
 
@@ -79,7 +80,7 @@ fn send_usb_to_device(path: &Path) -> Result<()> {
     let bus = str::parse(&busnum.to_string_lossy())?;
     let addr = str::parse(&devnum.to_string_lossy())?;
 
-    let ctx = libusb::Context::new().unwrap();
+    let ctx = rusb::Context::new().unwrap();
     let rc = ctx
         .devices()
         .unwrap()
