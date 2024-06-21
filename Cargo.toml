@@ -9,5 +9,5 @@ description = "Utility to switch Huion tablets into tablet mode"
 
 [dependencies]
 anyhow = "1.0.86"
-libusb = "0.3.0"
+rusb = "0.9.4"
 udev = "0.8.0"
