@@ -1,7 +1,15 @@
 use anyhow::{Context, Result};
 use rusb;
-use rusb::UsbContext;
+use rusb::{DeviceHandle, Language, UsbContext};
 use std::path::{Path, PathBuf};
+
+fn string_descriptor(handle: &DeviceHandle<rusb::Context>, lang: &Language, index: u8) -> String {
+    let timeout = std::time::Duration::from_millis(100);
+    let s = handle
+        .read_string_descriptor(*lang, index, timeout)
+        .unwrap();
+    s
+}
 
 fn send_usb_request(device: &rusb::Device<rusb::Context>) -> Result<()> {
     let timeout = std::time::Duration::from_millis(100);
@@ -15,22 +23,22 @@ fn send_usb_request(device: &rusb::Device<rusb::Context>) -> Result<()> {
         .find(|l| l.lang_id() == MAGIC_LANGUAGE_ID)
         .map(|lang| {
             // Firmware call for Huion devices
-            let s = handle.read_string_descriptor(*lang, 201, timeout).unwrap();
+            let s = string_descriptor(&handle, lang, 201);
             println!("HUION_FIRMWARE_ID={s}");
             // Get the pen input parameters, see uclogic_params_pen_init_v2()
             // This retrieves magic configuration parameters but more importantly
             // switches the tablet to send events on the 0x8 Report ID (88 bits of Vendor Usage in
             // Usage Page 0x00FF).
-            let s = handle.read_string_descriptor(*lang, 200, timeout).unwrap();
+            let s = string_descriptor(&handle, lang, 200);
             if s.as_bytes().len() >= 18 {
                 let bytes: Vec<String> = s.as_bytes().iter().map(|b| format!("{b:02x}")).collect();
                 println!("HUION_MAGIC_BYTES={}", bytes.join(""));
             } else {
-                let s = handle.read_string_descriptor(*lang, 100, timeout).unwrap();
+                let s = string_descriptor(&handle, lang, 100);
                 let bytes: Vec<String> = s.as_bytes().iter().map(|b| format!("{b:02x}")).collect();
                 println!("HUION_MAGIC_BYTES={}", bytes.join(""));
                 // switch the buttons into raw mode
-                let s = handle.read_string_descriptor(*lang, 123, timeout).unwrap();
+                let s = string_descriptor(&handle, lang, 123);
                 println!("HUION_PAD_MODE={s}");
             }
         });
