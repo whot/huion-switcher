@@ -15,8 +15,9 @@ fn send_usb_request(device: &rusb::Device<rusb::Context>) -> Result<()> {
         .filter(|l| l.lang_id() == MAGIC_LANGUAGE_ID)
         .for_each(|lang| {
             // Firmware call for Huion devices
-            let s = handle.read_string_descriptor(*lang, 201, timeout).unwrap();
-            println!("HUION_FIRMWARE_ID={s}");
+            let fwid = handle.read_string_descriptor(*lang, 201, timeout).unwrap();
+            /* firmware id is printed last, this messes up udev on some old devices */
+
             // Get the pen input parameters, see uclogic_params_pen_init_v2()
             // This retrieves magic configuratino parameters but more importantly
             // switches the tablet to send events on the 0x8 Report ID (88 bits of Vendor Usage in
@@ -39,6 +40,7 @@ fn send_usb_request(device: &rusb::Device<rusb::Context>) -> Result<()> {
                 let s = handle.read_string_descriptor(*lang, 123, timeout).unwrap();
                 println!("HUION_PAD_MODE={s}");
             }
+            println!("HUION_FIRMWARE_ID={fwid}");
         });
 
     Ok(())
