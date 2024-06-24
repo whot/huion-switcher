@@ -12,8 +12,8 @@ fn send_usb_request(device: &rusb::Device<rusb::Context>) -> Result<()> {
         .read_languages(timeout)
         .unwrap()
         .iter()
-        .filter(|l| l.lang_id() == MAGIC_LANGUAGE_ID)
-        .for_each(|lang| {
+        .find(|l| l.lang_id() == MAGIC_LANGUAGE_ID)
+        .map(|lang| {
             // Firmware call for Huion devices
             let s = handle.read_string_descriptor(*lang, 201, timeout).unwrap();
             println!("HUION_FIRMWARE_ID={s}");
