@@ -3,6 +3,12 @@ use rusb;
 use rusb::{DeviceHandle, Language, UsbContext};
 use std::path::{Path, PathBuf};
 
+fn utf16_to_be_string(s: &str) -> String {
+    s.encode_utf16()
+        .map(|b| format!("{:04x}", b.to_be()))
+        .collect()
+}
+
 fn string_descriptor(
     handle: &DeviceHandle<rusb::Context>,
     lang: &Language,
@@ -38,12 +44,12 @@ fn send_usb_request(device: &rusb::Device<rusb::Context>) -> Result<()> {
             // Usage Page 0x00FF).
             let s = string_descriptor(&handle, lang, 200)?;
             if s.as_bytes().len() >= 18 {
-                let bytes: Vec<String> = s.as_bytes().iter().map(|b| format!("{b:02x}")).collect();
-                println!("HUION_MAGIC_BYTES={}", bytes.join(""));
+                let bytes = utf16_to_be_string(&s);
+                println!("HUION_MAGIC_BYTES={bytes}");
             } else {
                 let s = string_descriptor(&handle, lang, 100)?;
-                let bytes: Vec<String> = s.as_bytes().iter().map(|b| format!("{b:02x}")).collect();
-                println!("HUION_MAGIC_BYTES={}", bytes.join(""));
+                let bytes = utf16_to_be_string(&s);
+                println!("HUION_MAGIC_BYTES={bytes}");
                 // switch the buttons into raw mode
                 let s = string_descriptor(&handle, lang, 123)?;
                 println!("HUION_PAD_MODE={s}");
