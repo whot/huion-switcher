@@ -3,12 +3,19 @@ use rusb;
 use rusb::{DeviceHandle, Language, UsbContext};
 use std::path::{Path, PathBuf};
 
-fn string_descriptor(handle: &DeviceHandle<rusb::Context>, lang: &Language, index: u8) -> String {
+fn string_descriptor(
+    handle: &DeviceHandle<rusb::Context>,
+    lang: &Language,
+    index: u8,
+) -> Result<String> {
     let timeout = std::time::Duration::from_millis(100);
     let s = handle
         .read_string_descriptor(*lang, index, timeout)
-        .unwrap();
-    s
+        .context(format!(
+            "Failed reading string descriptor for lang 0x{:x} index {index}",
+            lang.lang_id()
+        ))?;
+    Ok(s)
 }
 
 fn send_usb_request(device: &rusb::Device<rusb::Context>) -> Result<()> {
@@ -21,29 +28,30 @@ fn send_usb_request(device: &rusb::Device<rusb::Context>) -> Result<()> {
         .unwrap()
         .iter()
         .find(|l| l.lang_id() == MAGIC_LANGUAGE_ID)
-        .map(|lang| {
+        .map(|lang| -> Result<()> {
             // Firmware call for Huion devices
-            let s = string_descriptor(&handle, lang, 201);
+            let s = string_descriptor(&handle, lang, 201)?;
             println!("HUION_FIRMWARE_ID={s}");
             // Get the pen input parameters, see uclogic_params_pen_init_v2()
             // This retrieves magic configuration parameters but more importantly
             // switches the tablet to send events on the 0x8 Report ID (88 bits of Vendor Usage in
             // Usage Page 0x00FF).
-            let s = string_descriptor(&handle, lang, 200);
+            let s = string_descriptor(&handle, lang, 200)?;
             if s.as_bytes().len() >= 18 {
                 let bytes: Vec<String> = s.as_bytes().iter().map(|b| format!("{b:02x}")).collect();
                 println!("HUION_MAGIC_BYTES={}", bytes.join(""));
             } else {
-                let s = string_descriptor(&handle, lang, 100);
+                let s = string_descriptor(&handle, lang, 100)?;
                 let bytes: Vec<String> = s.as_bytes().iter().map(|b| format!("{b:02x}")).collect();
                 println!("HUION_MAGIC_BYTES={}", bytes.join(""));
                 // switch the buttons into raw mode
-                let s = string_descriptor(&handle, lang, 123);
+                let s = string_descriptor(&handle, lang, 123)?;
                 println!("HUION_PAD_MODE={s}");
             }
-        });
-
-    Ok(())
+            Ok(())
+        })
+        .or(Some(Ok(()))) // Never finding the lang id is fine
+        .unwrap()
 }
 
 fn send_usb_to_all() -> Result<()> {
