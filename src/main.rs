@@ -18,7 +18,7 @@ fn send_usb_request(device: &rusb::Device<rusb::Context>) -> Result<()> {
             let s = handle.read_string_descriptor(*lang, 201, timeout).unwrap();
             println!("HUION_FIRMWARE_ID={s}");
             // Get the pen input parameters, see uclogic_params_pen_init_v2()
-            // This retrieves magic configuratino parameters but more importantly
+            // This retrieves magic configuration parameters but more importantly
             // switches the tablet to send events on the 0x8 Report ID (88 bits of Vendor Usage in
             // Usage Page 0x00FF).
             let s = handle.read_string_descriptor(*lang, 200, timeout).unwrap();
