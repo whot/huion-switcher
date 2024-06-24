@@ -23,11 +23,17 @@ fn send_usb_request(device: &rusb::Device<rusb::Context>) -> Result<()> {
             // Usage Page 0x00FF).
             let s = handle.read_string_descriptor(*lang, 200, timeout).unwrap();
             if s.as_bytes().len() >= 18 {
-                let bytes: Vec<String> = s.as_bytes().iter().map(|b| format!("{b:02x}")).collect();
+                let bytes: Vec<String> = s
+                    .encode_utf16()
+                    .map(|b| format!("{:04x}", b.to_be()))
+                    .collect();
                 println!("HUION_MAGIC_BYTES={}", bytes.join(""));
             } else {
                 let s = handle.read_string_descriptor(*lang, 100, timeout).unwrap();
-                let bytes: Vec<String> = s.as_bytes().iter().map(|b| format!("{b:02x}")).collect();
+                let bytes: Vec<String> = s
+                    .encode_utf16()
+                    .map(|b| format!("{:04x}", b.to_be()))
+                    .collect();
                 println!("HUION_MAGIC_BYTES={}", bytes.join(""));
                 // switch the buttons into raw mode
                 let s = handle.read_string_descriptor(*lang, 123, timeout).unwrap();
