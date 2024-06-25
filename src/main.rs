@@ -85,7 +85,7 @@ fn send_usb_request(device: &rusb::Device<rusb::Context>) -> Result<()> {
     // uclogic_params_pen_init_v2()
     match huion_string_descriptor(&handle, &lang, 100) {
         Ok(bytes) => {
-            if bytes.len() == 12 {
+            if bytes.len() >= 12 {
                 let bytes = bytestring(&bytes);
                 println!("HUION_MAGIC_BYTES={bytes}");
                 // switch the buttons into raw mode
