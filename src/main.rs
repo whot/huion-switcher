@@ -1,21 +1,46 @@
 use anyhow::{Context, Result};
 use rusb;
-use rusb::{DeviceHandle, Language, UsbContext};
+use rusb::{DeviceHandle, Direction, Language, Recipient, RequestType, UsbContext};
 use std::path::{Path, PathBuf};
 
-fn utf16_to_be_string(s: &str) -> String {
-    s.encode_utf16()
-        .map(|b| format!("{:04x}", b.to_be()))
-        .collect()
+fn bytestring(s: &[u8]) -> String {
+    s.iter()
+        .map(|b| format!("{b:02x}"))
+        .collect::<Vec<String>>()
+        .join("")
 }
 
-fn string_descriptor(
+/// The hid-uclogic driver queries the bytes for this buffer
+/// and returns the *full* buffer, including the len + DT prefix bytes.
+/// To be compatible with that code, let's do the same here.
+fn huion_string_descriptor(
     handle: &DeviceHandle<rusb::Context>,
     lang: &Language,
     index: u8,
-) -> rusb::Result<String> {
+) -> rusb::Result<Vec<u8>> {
     let timeout = std::time::Duration::from_millis(100);
-    handle.read_string_descriptor(*lang, index, timeout)
+
+    // This matches rusb::DeviceHandle::read_string_descriptor() but
+    // that function enforces a utf16 string with even lengths.
+    // But we don't have a string here, we just have random bytes,
+    // and on the Kamvas 12 our return buffer is length 19 which
+    // always results in Error::BadDescriptor.
+    let mut buf = [0u8; 256];
+    let len = handle.read_control(
+        rusb::request_type(Direction::In, RequestType::Standard, Recipient::Device),
+        rusb::constants::LIBUSB_REQUEST_GET_DESCRIPTOR,
+        u16::from(rusb::constants::LIBUSB_DT_STRING) << 8 | u16::from(index),
+        lang.lang_id(),
+        &mut buf,
+        timeout,
+    )?;
+    // buf[0] is length of the buffer
+    // buf[1] is the descriptor type (LIBUSB_DT_STRING == 0x3)
+    if buf[0] != len as u8 {
+        return Err(rusb::Error::BadDescriptor);
+    }
+
+    Ok(buf[..len].to_vec())
 }
 
 fn send_usb_request(device: &rusb::Device<rusb::Context>) -> Result<()> {
@@ -33,17 +58,18 @@ fn send_usb_request(device: &rusb::Device<rusb::Context>) -> Result<()> {
     };
 
     // Firmware call for Huion devices
-    let s = string_descriptor(&handle, &lang, 201)?;
+    // Note: yes, this is a normal read_string_descriptor, see hid-uclogic
+    let s = handle.read_string_descriptor(lang, 201, timeout)?;
     println!("HUION_FIRMWARE_ID={s}");
 
     // Get the pen input parameters, see uclogic_params_pen_init_v2()
     // This retrieves magic configuration parameters but more importantly
     // switches the tablet to send events on the 0x8 Report ID (88 bits of Vendor Usage in
     // Usage Page 0x00FF).
-    match string_descriptor(&handle, &lang, 200) {
-        Ok(s) => {
-            if s.as_bytes().len() >= 18 {
-                let bytes = utf16_to_be_string(&s);
+    match huion_string_descriptor(&handle, &lang, 200) {
+        Ok(bytes) => {
+            if bytes.len() >= 18 {
+                let bytes = bytestring(&bytes);
                 println!("HUION_MAGIC_BYTES={bytes}");
                 return Ok(());
             }
@@ -57,13 +83,14 @@ fn send_usb_request(device: &rusb::Device<rusb::Context>) -> Result<()> {
 
     // We got a short string descriptor above, try for older tablets, see
     // uclogic_params_pen_init_v2()
-    match string_descriptor(&handle, &lang, 100) {
-        Ok(s) => {
-            if s.as_bytes().len() == 12 {
-                let bytes = utf16_to_be_string(&s);
+    match huion_string_descriptor(&handle, &lang, 100) {
+        Ok(bytes) => {
+            if bytes.len() == 12 {
+                let bytes = bytestring(&bytes);
                 println!("HUION_MAGIC_BYTES={bytes}");
                 // switch the buttons into raw mode
-                let s = string_descriptor(&handle, &lang, 123)?;
+                // Note: yes, this is a normal read_string_descriptor, see hid-uclogic
+                let s = handle.read_string_descriptor(lang, 123, timeout)?;
                 println!("HUION_PAD_MODE={s}");
             }
         }
