@@ -13,15 +13,9 @@ fn string_descriptor(
     handle: &DeviceHandle<rusb::Context>,
     lang: &Language,
     index: u8,
-) -> Result<String> {
+) -> rusb::Result<String> {
     let timeout = std::time::Duration::from_millis(100);
-    let s = handle
-        .read_string_descriptor(*lang, index, timeout)
-        .context(format!(
-            "Failed reading string descriptor for lang 0x{:x} index {index}",
-            lang.lang_id()
-        ))?;
-    Ok(s)
+    handle.read_string_descriptor(*lang, index, timeout)
 }
 
 fn send_usb_request(device: &rusb::Device<rusb::Context>) -> Result<()> {
@@ -29,35 +23,57 @@ fn send_usb_request(device: &rusb::Device<rusb::Context>) -> Result<()> {
     let handle = device.open()?;
     // See the uclogic driver
     const MAGIC_LANGUAGE_ID: u16 = 0x409;
-    handle
+    let Some(lang) = handle
         .read_languages(timeout)
         .unwrap()
-        .iter()
+        .into_iter()
         .find(|l| l.lang_id() == MAGIC_LANGUAGE_ID)
-        .map(|lang| -> Result<()> {
-            // Firmware call for Huion devices
-            let s = string_descriptor(&handle, lang, 201)?;
-            println!("HUION_FIRMWARE_ID={s}");
-            // Get the pen input parameters, see uclogic_params_pen_init_v2()
-            // This retrieves magic configuration parameters but more importantly
-            // switches the tablet to send events on the 0x8 Report ID (88 bits of Vendor Usage in
-            // Usage Page 0x00FF).
-            let s = string_descriptor(&handle, lang, 200)?;
+    else {
+        return Ok(());
+    };
+
+    // Firmware call for Huion devices
+    let s = string_descriptor(&handle, &lang, 201)?;
+    println!("HUION_FIRMWARE_ID={s}");
+
+    // Get the pen input parameters, see uclogic_params_pen_init_v2()
+    // This retrieves magic configuration parameters but more importantly
+    // switches the tablet to send events on the 0x8 Report ID (88 bits of Vendor Usage in
+    // Usage Page 0x00FF).
+    match string_descriptor(&handle, &lang, 200) {
+        Ok(s) => {
             if s.as_bytes().len() >= 18 {
                 let bytes = utf16_to_be_string(&s);
                 println!("HUION_MAGIC_BYTES={bytes}");
-            } else {
-                let s = string_descriptor(&handle, lang, 100)?;
+                return Ok(());
+            }
+        }
+        Err(rusb::Error::Pipe) => {}
+        Err(e) => Err(e).context(format!(
+            "Failed reading string descriptor for lang 0x{:x} index 200",
+            lang.lang_id()
+        ))?,
+    };
+
+    // We got a short string descriptor above, try for older tablets, see
+    // uclogic_params_pen_init_v2()
+    match string_descriptor(&handle, &lang, 100) {
+        Ok(s) => {
+            if s.as_bytes().len() == 12 {
                 let bytes = utf16_to_be_string(&s);
                 println!("HUION_MAGIC_BYTES={bytes}");
                 // switch the buttons into raw mode
-                let s = string_descriptor(&handle, lang, 123)?;
+                let s = string_descriptor(&handle, &lang, 123)?;
                 println!("HUION_PAD_MODE={s}");
             }
-            Ok(())
-        })
-        .or(Some(Ok(()))) // Never finding the lang id is fine
-        .unwrap()
+        }
+        Err(rusb::Error::Pipe) => {}
+        Err(e) => Err(e).context(format!(
+            "Failed reading string descriptor for lang 0x{:x} index 100",
+            lang.lang_id()
+        ))?,
+    }
+    Ok(())
 }
 
 fn send_usb_to_all() -> Result<()> {
