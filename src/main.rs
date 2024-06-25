@@ -60,7 +60,8 @@ fn send_usb_request(device: &rusb::Device<rusb::Context>) -> Result<()> {
     // Firmware call for Huion devices
     // Note: yes, this is a normal read_string_descriptor, see hid-uclogic
     let s = handle.read_string_descriptor(lang, 201, timeout)?;
-    println!("HUION_FIRMWARE_ID={s}");
+    let s = s.trim_end_matches('\0');
+    println!("HUION_FIRMWARE_ID={s:?}");
 
     // Get the pen input parameters, see uclogic_params_pen_init_v2()
     // This retrieves magic configuration parameters but more importantly
