@@ -71,7 +71,7 @@ fn send_usb_request(device: &rusb::Device<rusb::Context>) -> Result<()> {
         Ok(bytes) => {
             if bytes.len() >= 18 {
                 let bytes = bytestring(&bytes);
-                println!("HUION_MAGIC_BYTES={bytes}");
+                println!("HUION_MAGIC_BYTES={bytes:?}");
                 return Ok(());
             }
         }
@@ -88,11 +88,11 @@ fn send_usb_request(device: &rusb::Device<rusb::Context>) -> Result<()> {
         Ok(bytes) => {
             if bytes.len() >= 12 {
                 let bytes = bytestring(&bytes);
-                println!("HUION_MAGIC_BYTES={bytes}");
+                println!("HUION_MAGIC_BYTES={bytes:?}");
                 // switch the buttons into raw mode
                 // Note: yes, this is a normal read_string_descriptor, see hid-uclogic
                 let s = handle.read_string_descriptor(lang, 123, timeout)?;
-                println!("HUION_PAD_MODE={s}");
+                println!("HUION_PAD_MODE={s:?}");
             }
         }
         Err(rusb::Error::Pipe) => {}
