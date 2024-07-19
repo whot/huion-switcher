@@ -5,7 +5,7 @@ env:
   UBUNTU_PACKAGES: libusb-1.0.0 libusb-1.0-0-dev libudev-dev
 
 jobs:
-  test:
+  build-and-test:
     name: cargo test
     runs-on: ubuntu-latest
     steps:
@@ -23,3 +23,23 @@ jobs:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
       - run: cargo fmt --check
+
+  release-build:
+     name: cargo build --release
+     runs-on: ubuntu-22.04
+     needs: [build-and-test]
+     steps:
+       - uses: actions/checkout@v4
+       - uses: dtolnay/rust-toolchain@stable
+       - uses: linuxwacom/libwacom/.github/actions/pkginstall@master
+         with:
+           apt: $UBUNTU_PACKAGES
+       - run: cargo build --release
+       - run: cp target/release/huion-switcher .
+       - uses: actions/upload-artifact@v4
+         with:
+           name: huion-switcher
+           path: |
+             huion-switcher
+             README.md
+             *.rules
