@@ -8,6 +8,6 @@ repository = "https://github.com/whot/huion-switcher"
 description = "Utility to switch Huion tablets into tablet mode"
 
 [dependencies]
-anyhow = "1.0.86"
+anyhow = "1.0.84"
 rusb = "0.9.4"
-udev = "0.8.0"
+udev = "0.7.0"
