@@ -43,3 +43,18 @@ jobs:
              huion-switcher
              README.md
              *.rules
+
+  create-release:
+    runs-on: ubuntu-22.04
+    if: startsWith(github.ref, 'refs/tags/')
+    needs: [release-build]
+    permissions:
+      contents: write
+    steps:
+      - uses: dawidd6/action-download-artifact@v6
+        with:
+          name: huion-switcher
+          skip_unpack: true
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: huion-switcher.zip
