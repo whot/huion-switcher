@@ -22,6 +22,18 @@ $ sudo cargo build
 $ sudo cargo run
 ```
 
+Alternatively you can download a pre-built binary from the
+[latest release](https://github.com/whot/huion-switcher/releases). Look for the
+`huion-switcher.zip` that's attached to the release (and built by our
+[CI workflow](https://github.com/whot/huion-switcher/blob/main/.github/workflows/main.yml)):
+
+```
+$ unzip huion-switcher.zip
+$ chmod +x huion-switcher
+$ sudo ./huion-switcher
+```
+Or see the `Installing` section below for installing ready for a udev invocation.
+
 ## Installing
 
 ```
