@@ -191,8 +191,28 @@ fn search_udev(path: &str) -> Result<()> {
     Ok(())
 }
 
+fn usage() {
+    eprintln!(
+        r#"Usage: huion-switcher [PATH]
+
+Switch a Huion tablet device to vendor reporting mode. If a
+sysfs PATH is given, that device is switched. Otherwise, all
+connected Huion tablets are switched to vendor reporting mode"#
+    );
+}
+
 fn main() {
     let args: Vec<String> = std::env::args().skip(1).collect();
+
+    if args.iter().any(|s| s == "--help") {
+        usage();
+        return ();
+    }
+    if args.iter().any(|s| s == "--version") {
+        println!(env!("CARGO_PKG_VERSION"));
+        return ();
+    }
+
     let strs: Vec<&str> = args.iter().map(|x| x.as_str()).collect();
     let rc = match &strs[..] {
         [path] => search_udev(path),
