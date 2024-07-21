@@ -1,4 +1,4 @@
-use anyhow::{Context, Result};
+use anyhow::{anyhow, Context, Result};
 use rusb;
 use rusb::{DeviceHandle, Direction, Language, Recipient, RequestType, UsbContext};
 use std::path::{Path, PathBuf};
@@ -193,11 +193,11 @@ fn search_udev(path: &str) -> Result<()> {
 
 fn usage() {
     eprintln!(
-        r#"Usage: huion-switcher [PATH]
+        r#"Usage: huion-switcher --all|<PATH>
 
-Switch a Huion tablet device to vendor reporting mode. If a
-sysfs PATH is given, that device is switched. Otherwise, all
-connected Huion tablets are switched to vendor reporting mode"#
+Switch a Huion tablet device to vendor reporting mode. If a sysfs PATH
+is given, that device is switched. Otherwise if --all is given,
+all connected Huion tablets are switched to vendor reporting mode."#
     );
 }
 
@@ -215,8 +215,11 @@ fn main() {
 
     let strs: Vec<&str> = args.iter().map(|x| x.as_str()).collect();
     let rc = match &strs[..] {
+        ["--all"] => send_usb_to_all(),
         [path] => search_udev(path),
-        _ => send_usb_to_all(),
+        _ => Err(anyhow!(
+            "Invalid or missing argument: specify a path or --all"
+        )),
     };
     if let Err(e) = rc {
         eprintln!("Error: {e}");
