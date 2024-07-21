@@ -1,0 +1,51 @@
+.TH huion-switcher "1" "" "huion-switcher" "huion-switcher Manual"
+.SH NAME
+huion\-switcher - switch Huion tablets to vendor reporting mode
+.SH SYNOPSIS
+.B huion\-switcher [\-\-help|\-\-version] \fI--all|<path>\fR
+.SH DESCRIPTION
+.PP
+\fBhuion\-switcher\fR switches Huion tablet devices from the default firmware
+reporting mode to the vendor reporting mode. In vendor mode the device uses a
+HID vendor collection to report input data in a more precise and
+device-specific manner than firmware mode. Some device features may only be
+available in vendor mode.  However, vendor mode requires either a kernel driver
+or a HID eBPF program to interpret the vendor-specific HID reports.
+.PP
+If you intend to use HID eBPF programs (see udev-hid-bpf(1)) for Huion tablets, you
+will need the tablet in vendor reporting mode.
+.PP
+\fBhuion\-switcher\fR prints several strings in the KEY=VALUE format. These
+strings should be passed to the HID eBPF program to allow for device-specific
+behavior. Use the udev rule provided in the \fBhuion\-switcher\fR repository to
+ensure the properties are passed correctly.
+.SH OPTIONS
+.TP
+.B \-\-all
+Attempt to switch all connected Huion devices to vendor reporting mode. Note that Huion's
+USB Vendor ID (0x256C) is re-used by other vendors (e.g. Gaomon) and thus any such devices
+will also be switched.
+.TP
+.B \-\-help
+Print help and exit
+.TP
+.B \-\-version
+Print version and exit
+.TP
+.B path
+A sysfs path to the device. Typically this invocation is used with a udev rule.
+It is possible to use a hidraw path via the
+\fI/sys/class/hidraw/hidraw*\fI.
+.SH INVOCATION VIA UDEV
+.PP
+The recommended way to use \fBhuion\-switcher\fR is to install it in
+\fI/usr/lib/udev\fR and invoke it automatically via the
+\fI80-huion-switcher.rules\fR udev rule on device plug. The udev rule
+can be found in the \fBhuion\-switcher\fR repository.
+.RE
+.SH SEE ALSO
+huion\-switcher's git repository:
+.I https://github.com/whot/huion-switcher/
+.PP
+udev\-hid\-bpf:
+.I https://gitlab.freedesktop.org/libevdev/udev-hid-bpf
