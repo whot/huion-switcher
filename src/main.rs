@@ -191,21 +191,16 @@ fn search_udev(path: &str) -> Result<()> {
     Ok(())
 }
 
-fn usage() {
-    eprintln!(
-        r#"Usage: huion-switcher --all|<PATH>
+fn main() {
+    let args: Vec<String> = std::env::args().skip(1).collect();
+    let usage_string = r#"Usage: huion-switcher --all|<PATH>
 
 Switch a Huion tablet device to vendor reporting mode. If a sysfs PATH
 is given, that device is switched. Otherwise if --all is given,
-all connected Huion tablets are switched to vendor reporting mode."#
-    );
-}
-
-fn main() {
-    let args: Vec<String> = std::env::args().skip(1).collect();
+all connected Huion tablets are switched to vendor reporting mode."#;
 
     if args.iter().any(|s| s == "--help") {
-        usage();
+        eprintln!("{usage_string}");
         return ();
     }
     if args.iter().any(|s| s == "--version") {
@@ -217,9 +212,9 @@ fn main() {
     let rc = match &strs[..] {
         ["--all"] => send_usb_to_all(),
         [path] => search_udev(path),
-        _ => Err(anyhow!(
-            "Invalid or missing argument: specify a path or --all"
-        )),
+        _ => Err(anyhow!(format!(
+            "Invalid or missing argument\n\n{usage_string}"
+        ))),
     };
     if let Err(e) = rc {
         eprintln!("Error: {e}");
