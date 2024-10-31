@@ -46,13 +46,15 @@ fn huion_string_descriptor(
 fn send_usb_request(device: &rusb::Device<rusb::Context>) -> Result<()> {
     let timeout = std::time::Duration::from_millis(100);
     let handle = device.open()?;
+
+    // 0x0409 is the USB Language Identifier for English (United States).
     // See the uclogic driver
-    const MAGIC_LANGUAGE_ID: u16 = 0x409;
+    const US_LANGUAGE_ID: u16 = 0x409;
     let Some(lang) = handle
         .read_languages(timeout)
         .unwrap()
         .into_iter()
-        .find(|l| l.lang_id() == MAGIC_LANGUAGE_ID)
+        .find(|l| l.lang_id() == US_LANGUAGE_ID)
     else {
         return Ok(());
     };
