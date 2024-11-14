@@ -12,9 +12,10 @@ different report descriptors:
 - the third one will be `Usage Page (Generic Desktop)` and emulates a keyboard.
   Pad button presses will send keyboard events on this device.
 
-`huion-switcher` reads the magic `0x409` language ID from the USB report
-descriptor. Doing so causes the device to stop sending events via the
-pen/keyboard device and instead send events via the vendor hidraw device.
+`huion-switcher` reads a special string descriptor index from the US English
+(`0x409`) language ID in the USB report descriptor. Doing so causes the
+device to stop sending events via the pen/keyboard device and instead send
+events via the vendor hidraw device.
 This gives us access to actual pad buttons and more rather than the (ambiguous)
 emulated key presses. However, for the kernel to correctly interpret those
 events you will need [this BPF program](https://gitlab.freedesktop.org/libevdev/udev-hid-bpf/-/merge_requests/85)
