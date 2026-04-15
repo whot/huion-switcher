@@ -25,7 +25,7 @@ or something similar for your device.
 all events and the device must be unplugged and re-plugged to go back to
 the emulation mode.**
 
-If successful this tool will print the following ouput on success:
+If successful this tool will print the following output on success:
 ```
 HUION_MAGIC_BYTES=e7b480e280804ee1bfbfe18f98d883e8808004e0a1a3
 HUION_FIRMWARE_ID=HUION_T21j_221221

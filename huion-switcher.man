@@ -35,7 +35,7 @@ Print version and exit
 .B path
 A sysfs path to the device. Typically this invocation is used with a udev rule.
 It is possible to use a hidraw path via the
-\fI/sys/class/hidraw/hidraw*\fI.
+\fI/sys/class/hidraw/hidraw*\fR.
 .SH INVOCATION VIA UDEV
 .PP
 The recommended way to use \fBhuion\-switcher\fR is to install it in
