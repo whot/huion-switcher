@@ -1,5 +1,4 @@
 use anyhow::{anyhow, Context, Result};
-use rusb;
 use rusb::{DeviceHandle, Direction, Language, Recipient, RequestType, UsbContext};
 use std::path::{Path, PathBuf};
 
@@ -203,20 +202,18 @@ all connected Huion tablets are switched to vendor reporting mode."#;
 
     if args.iter().any(|s| s == "--help") {
         eprintln!("{usage_string}");
-        return ();
+        return;
     }
     if args.iter().any(|s| s == "--version") {
         println!(env!("CARGO_PKG_VERSION"));
-        return ();
+        return;
     }
 
     let strs: Vec<&str> = args.iter().map(|x| x.as_str()).collect();
     let rc = match &strs[..] {
         ["--all"] => send_usb_to_all(),
         [path] => search_udev(path),
-        _ => Err(anyhow!(format!(
-            "Invalid or missing argument\n\n{usage_string}"
-        ))),
+        _ => Err(anyhow!("Invalid or missing argument\n\n{usage_string}")),
     };
     if let Err(e) = rc {
         eprintln!("Error: {e}");
