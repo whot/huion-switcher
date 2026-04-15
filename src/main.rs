@@ -165,17 +165,14 @@ fn search_udev(path: &str) -> Result<()> {
 
     loop {
         // We expect all properties to be set on the same device
-        if properties
-            .iter()
-            .map(|p| {
-                let v = device.property_value(p);
-                if let Some(v) = v {
-                    println!("{p}={}", v.to_string_lossy());
-                }
-                v.is_some()
-            })
-            .fold(false, |acc, x| acc || x)
-        {
+        let mut found = false;
+        for p in &properties {
+            if let Some(v) = device.property_value(p) {
+                println!("{p}={}", v.to_string_lossy());
+                found = true;
+            }
+        }
+        if found {
             break;
         }
 
